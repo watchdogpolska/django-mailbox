@@ -1,6 +1,16 @@
+import sys
 from setuptools import find_packages, setup
+import os
 
 from django_mailbox import __version__ as version_string
+
+os.environ['DJANGO_SETTINGS_MODULE'] = 'django_mailbox.tests.settings'
+
+from django.core import management
+
+if len(sys.argv) > 1 and sys.argv[1] == 'test':
+    management.execute_from_command_line()
+    sys.exit()
 
 tests_require = [
     'django',
@@ -32,9 +42,6 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Framework :: Django',
-        'Framework :: Django :: 1.4',
-        'Framework :: Django :: 1.5',
-        'Framework :: Django :: 1.6',
         'Framework :: Django :: 1.7',
         'Framework :: Django :: 1.8',
         'Framework :: Django :: 1.9',
