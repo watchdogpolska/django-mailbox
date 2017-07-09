@@ -6,12 +6,13 @@ import copy
 import mock
 import six
 
+from django.core.mail import EmailMessage
 from django_mailbox.models import Mailbox, Message
 from django_mailbox.utils import convert_header_to_unicode
 from django_mailbox import utils
 from django_mailbox.tests.base import EmailMessageTestCase
+from django.test.utils import override_settings
 from django.utils.encoding import force_text
-from django.core.mail import EmailMessage
 
 __all__ = ['TestProcessEmail']
 
@@ -90,7 +91,7 @@ class TestProcessEmail(EmailMessageTestCase):
         )
 
     def test_message_with_not_decoded_attachment_header(self):
-        if sys.version_info > (3, 0):
+        if not six.PY3:
             self.skipTest(
                 "This test is only relevant on Python 2.x."
             )
@@ -147,14 +148,17 @@ class TestProcessEmail(EmailMessageTestCase):
             u'odpowied\u017a Burmistrza.jpg'
         )
 
+    @override_settings(
+        DJANGO_MAILBOX_DEFAULT_CHARSET='iso8859-2'
+    )
     def test_message_with_utf_headers_in_attachments(self):
         email_object = self._get_email_object(
-            'message_with_utf8_headers_in_attachment.eml',
+            'message_with_iso8859-2_attachment_filename.eml',
         )
         mailbox = Mailbox.objects.create()
         msg = mailbox.process_incoming_message(email_object)
 
-        expected_count = 2
+        expected_count = 1
         actual_count = msg.attachments.count()
 
         self.assertEqual(
@@ -162,7 +166,13 @@ class TestProcessEmail(EmailMessageTestCase):
             actual_count,
         )
 
-        # TODO: Verify filenames
+        expected_filename = (
+            u'Odp. na wniosek     o udost\u0119pnienie '
+            u'inf. publicznej.jpg'
+        )
+        actual_filename = msg.attachments.all()[0].get_filename()
+
+        self.assertEqual(expected_filename, actual_filename)
 
     def test_message_get_text_body(self):
         message = self._get_email_object('multipart_text.eml')
