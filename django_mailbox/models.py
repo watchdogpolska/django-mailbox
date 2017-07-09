@@ -16,9 +16,7 @@ import mimetypes
 import os.path
 import sys
 import uuid
-import zlib
-import StringIO
-from tempfile import SpooledTemporaryFile, NamedTemporaryFile
+from tempfile import NamedTemporaryFile
 
 import six
 from six.moves.urllib.parse import parse_qs, unquote, urlparse
@@ -389,7 +387,7 @@ class Mailbox(models.Model):
         if settings['compress_original_message']:
             with NamedTemporaryFile(suffix=".eml.gz") as fp_tmp:
                 with gzip.GzipFile(fileobj=fp_tmp, mode="w") as fp:
-                    fp.write(message.as_string())
+                    fp.write(message.as_string().encode('utf-8'))
                 msg.eml.save(
                     "%s.eml.gz" % (uuid.uuid4(), ),
                     File(fp_tmp),
