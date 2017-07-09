@@ -452,15 +452,15 @@ class TestProcessEmail(EmailMessageTestCase):
 
             msg = self.mailbox.process_incoming_message(message)
 
-        actual_email_object = msg.get_email_object()
-
         self.assertNotEquals(msg.eml, None)
 
         self.assertTrue(msg.eml.name.endswith('.eml'))
 
         with open(msg.eml.name, 'rb') as f:
-            self.assertEqual(f.read(),
-                             self._get_email_as_text('generic_message.eml'))
+            actual_email_object = self.get_message_from_text(f.read())
+
+            self.assertEqual(actual_email_object,
+                             message)
 
     def test_message_saving_ignored(self):
         message = self._get_email_object('generic_message.eml')
@@ -489,10 +489,10 @@ class TestProcessEmail(EmailMessageTestCase):
 
             msg = self.mailbox.process_incoming_message(message)
 
-        actual_email_object = msg.get_email_object()
-
         self.assertTrue(msg.eml.name.endswith('.eml.gz'))
 
         with gzip.open(msg.eml.name, 'rb') as f:
-            self.assertEqual(f.read(),
-                             self._get_email_as_text('generic_message.eml'))
+            actual_email_object = self.get_message_from_text(f.read())
+
+            self.assertEqual(actual_email_object,
+                             message)

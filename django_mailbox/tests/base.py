@@ -82,6 +82,9 @@ class EmailMessageTestCase(TestCase):
 
     def _get_email_object(self, name):
         copy = self._get_email_as_text(name)
+        return self.get_message_from_text(copy)
+
+    def get_message_from_text(self, copy):
         if six.PY3:
             return email.message_from_bytes(copy)
         else:
