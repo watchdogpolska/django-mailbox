@@ -225,6 +225,8 @@ class Mailbox(models.Model):
     def process_incoming_message(self, message):
         """Process a message incoming to this mailbox."""
         msg = self._process_message(message)
+        if msg is None:
+            return None
         msg.outgoing = False
         msg.save()
 
@@ -235,6 +237,8 @@ class Mailbox(models.Model):
     def record_outgoing_message(self, message):
         """Record an outgoing message associated with this mailbox."""
         msg = self._process_message(message)
+        if msg is None:
+            return None
         msg.outgoing = True
         msg.save()
         return msg
@@ -363,7 +367,14 @@ class Mailbox(models.Model):
             )
         msg.save()
         message = self._get_dehydrated_message(message, msg)
-        msg.set_body(message.as_string())
+        try:
+            body = message.as_string()
+        except KeyError as exc:
+            # email.message.replace_header may raise 'KeyError' if the header
+            # 'content-transfer-encoding' is missing
+            logger.warning("Failed to parse message: %s", exc,)
+            return None
+        msg.set_body(body)
         if message['in-reply-to']:
             try:
                 msg.in_reply_to = Message.objects.filter(
@@ -382,7 +393,8 @@ class Mailbox(models.Model):
             return new_mail
         for message in connection.get_message(condition):
             msg = self.process_incoming_message(message)
-            new_mail.append(msg)
+            if not msg is None:
+                new_mail.append(msg)
         self.last_polling = now()
         if django.VERSION >= (1, 5):  # Django 1.5 introduces update_fields
             self.save(update_fields=['last_polling'])
@@ -394,7 +406,8 @@ class Mailbox(models.Model):
         return self.name
 
     class Meta:
-        verbose_name_plural = "Mailboxes"
+        verbose_name = _('Mailbox')
+        verbose_name_plural = _('Mailboxes')
 
 
 class IncomingMessageManager(models.Manager):
@@ -699,6 +712,10 @@ class Message(models.Model):
     def __unicode__(self):
         return self.subject
 
+    class Meta:
+        verbose_name = _('E-mail message')
+        verbose_name_plural = _('E-mail messages')
+
 
 class MessageAttachment(models.Model):
     message = models.ForeignKey(
@@ -733,7 +750,7 @@ class MessageAttachment(models.Model):
             try:
                 headers = headers.encode('utf-8')
             except UnicodeDecodeError:
-                headers = unicode(headers, 'utf-8').encode('utf-8')
+                headers = headers.decode('utf-8').encode('utf-8')
         return email.message_from_string(headers)
 
     def _set_dehydrated_headers(self, email_object):
@@ -771,3 +788,7 @@ class MessageAttachment(models.Model):
 
     def __unicode__(self):
         return self.document.url
+
+    class Meta:
+        verbose_name = _('Message attachment')
+        verbose_name_plural = _('Message attachments')
