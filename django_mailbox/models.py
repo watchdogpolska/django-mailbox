@@ -405,19 +405,18 @@ class Mailbox(models.Model):
 
     def get_new_mail(self, condition=None):
         """Connect to this transport and fetch new messages."""
-        new_mail = []
         connection = self.get_connection()
+        self.last_polling = now()
+        if django.VERSION >= (1, 5):  # Django 1.5 introduces update_fields
+            self.save(update_fields=['last_polling'])
+        else:
+            self.save()
         if not connection:
             return
         for message in connection.get_message(condition):
             msg = self.process_incoming_message(message)
             if not msg is None:
                 yield msg
-        self.last_polling = now()
-        if django.VERSION >= (1, 5):  # Django 1.5 introduces update_fields
-            self.save(update_fields=['last_polling'])
-        else:
-            self.save()
 
     def __str__(self):
         return self.name
