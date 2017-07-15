@@ -393,7 +393,7 @@ class Mailbox(models.Model):
                     File(fp_tmp),
                     save=False
                 )
-
+                msg.eml.seek(0)
         else:
             msg.eml.save(
                 '%s.eml' % uuid.uuid4(),
