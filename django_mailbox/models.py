@@ -391,7 +391,7 @@ class Mailbox(models.Model):
             with NamedTemporaryFile(suffix=".eml.gz") as fp_tmp:
                 with gzip.GzipFile(fileobj=fp_tmp, mode="w") as fp:
                     if six.PY3:
-                        fp.write(message.as_bytes())
+                        fp.write(message.as_string().encode('utf-8'))
                     else:
                         fp.write(message.as_string().decode('utf-8','replace').encode('utf-8'))
                 msg.eml.save(
